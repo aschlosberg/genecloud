@@ -23,10 +23,34 @@
 	<body>
 		<div class="container">
 			<hr />
-			<div id="cloud" class="row" style="text-align: center;"></div>
+			<div class="row">
+				<div class="col-lg-3"></div>
+				<div id="cloud" class="col-lg-6" style="text-align: center;"></div>
+				<div class="col-lg-3">
+					<div class="input-group">
+						<div class="input-group-addon">x</div>
+						<input id="x" class="form-control" />
+					</div>
+					<hr />
+					<div class="input-group">
+						<div class="input-group-addon">y</div>
+						<input id="y" class="form-control" />
+					</div>
+				</div>
+			</div>
 			<hr />
 			<div class="row">
-				<textarea id="seq" class="form-control"><?=file_get_contents("./fasta/BRCA1")?></textarea>
+				<div class="col-lg-6">
+					<textarea id="seq" class="form-control"><?=file_get_contents("./fasta/BRCA1")?></textarea>
+				</div>
+				<div class="col-lg-3">
+					<select id="fasta" class="form-control">
+						<?php foreach(preg_split("/[\s]+/", trim(`ls ./fasta | fgrep -v .`)) as $fasta) { $fasta = htmlentities($fasta); echo "<option value='{$fasta}'>{$fasta}</option>"; } ?>
+					</select>
+				</div>
+				<div class="col-lg-3">
+					<button id="load" type="button" class="btn btn-default btn-block">Load &amp; Render</button>
+				</div>
 			</div>
 			<hr />
 			<div class="row">
@@ -41,7 +65,7 @@
 				<div class="form-group col-lg-3">
 					<div class="input-group">
 						<div class="input-group-addon">dim</div>
-						<select id="dim" class="form-control"><option value="2">2</option><option value="3">3</option></select>
+						<select id="dim" class="form-control"><option value="2">2D</option><option value="3">3D</option></select>
 					</div>
 				</div>
 				

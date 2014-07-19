@@ -15,6 +15,8 @@ var genecloud = {
 					.html(ranks[r])
 			);
 		}
+		
+		$('#load').click(genecloud.load);
 	},
 	
 	render : function(){
@@ -89,14 +91,21 @@ var genecloud = {
 		var scale = size / Math.pow(4, frame);
 		var layer = new Kinetic.Layer();
 		for(var p in pts) {
-			layer.add(new Kinetic.Circle({
+			var node = new Kinetic.Circle({
 				x: pts[p][0] * scale,
 				y: pts[p][1] * scale,
 				radius: 2,
 				fill: 'rgba(0,0,255,'+(800/pts.length)+')',
-				id: 'pt'+p,
+				id: p,
 				transformsEnabled: 'position'
-			}));
+			});
+			
+			node.on('mouseover', function(e){
+				$('#x').val(genecloud.kmer(pts[e.target.getId()][0], frame));
+				$('#y').val(genecloud.kmer(pts[e.target.getId()][1], frame));
+				e.cancelBubble = true;
+			});
+			layer.add(node);
 
 			n++;
 			if(n >= 1000) {
@@ -140,6 +149,24 @@ var genecloud = {
 		};
 
 		render();
+	},
+	
+	kmer : function(x, frame){
+		x = parseInt(x);
+		var kmer = '';
+		var rank = $('#rank').val();
+		for(var i=0; i<frame; i++){
+			kmer = rank[x & 3] + kmer;
+			x = x >> 2;
+		}
+		return kmer;
+	},
+	
+	load : function(){
+		$.get('./fasta/'+$('#fasta').val(), function(data){
+			$('#seq').val(data);
+			genecloud.render();
+		});
 	},
 	
 	test : function(){
