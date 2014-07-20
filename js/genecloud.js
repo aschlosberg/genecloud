@@ -17,11 +17,44 @@ var genecloud = {
 		}
 		
 		$('#load').click(genecloud.load);
+
+		$('[data-help]').each(function(){
+			var popover = $('<div>')
+									.attr('data-toggle', 'popover')
+									.attr('data-content', $(this).attr('data-help'))
+									.attr('title', $(this).attr('data-help-title'))
+									.append($('<span class="glyphicon glyphicon-info-sign">'))
+									.addClass($(this).hasClass('input-group') ? 'input-group-addon' : 'pull-right');
+
+			$(this).append(popover);
+		});
+		
+		$('[data-toggle=popover]').popover({
+			container : 'body',
+			placement : 'auto',
+			trigger : 'manual',
+			html : true
+		}).on('mouseenter', function(){ //http://stackoverflow.com/questions/15989591/how-can-i-keep-bootstrap-popover-alive-while-the-popover-is-being-hovered
+			var _this = this;
+			$(this).popover('show');
+			var pId = $(this).attr('aria-describedby');
+			$('#'+pId).on('mouseleave', function(){
+				$(_this).trigger('mouseleave');
+			});
+    	}).on('mouseleave', function(){
+			var _this = this;
+			setTimeout(function(){
+				var pId = $(_this).attr('aria-describedby');
+				if(!$(_this).is(':hover') && !$('#'+pId).is(':hover')){
+					$(_this).popover('hide')
+				}
+			}, 200);
+		});
 	},
 	
 	render : function(){
 		try {
-			genecloud.fetchAccel = false; //restart it when we create a new 3D clouds
+			genecloud.fetchAngles = false; //restart it when we create a new 3D clouds
 			var seq = $('#seq').val().trim().toUpperCase();
 			if(seq.match(/[^ACGT]/)){
 				throw 'Invalid sequence data; ACGT only.';
@@ -37,7 +70,7 @@ var genecloud = {
 				throw 'Frame must be a positive integer.';
 			}
 			
-			var dim = parseInt($('#dim').val());
+			var dim = $('#3d').prop('checked') ? 3 : 2;
 			$('#cloud').empty();
 			genecloud['plot'+dim+'D'](genecloud.getPoints(dim, seq, frame), frame);
 		}
@@ -118,20 +151,23 @@ var genecloud = {
 		stage.add(layer);
 	},
 	
-	angles : [0, 0, 0],
-	fetchAccel : false,
-	accel : function(){
+	currAngles : [0, 0, 0],
+	fetchAngles : false,
+	animateAngle : 0,
+	animateInc : -0.01,
+	
+	angles : function(){
 		$.getJSON('http://localhost:8000/gyroAngle', function(data){
-			genecloud.angles = data;
-			if(genecloud.fetchAccel){
-				setTimeout(genecloud.accel, 0);
+			genecloud.currAngles = data;
+			if(genecloud.fetchAngles){
+				setTimeout(genecloud.angles, 0);
 			}
 		});
 	},
 	
 	plot3D : function(pts, frame){
-		genecloud.fetchAccel = true;
-		setTimeout(genecloud.accel, 0);
+		genecloud.fetchAngles = true;
+		setTimeout(genecloud.angles, 0);
 	
 		var scene = new THREE.Scene();
 		scene.fog = new THREE.FogExp2( 0xefd1b5, 0.25 );
@@ -153,14 +189,21 @@ var genecloud = {
 		scene.add(cloud);
 
 		var axes = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1)];
-		
 		var origin = new THREE.Vector3(0, 0, 0);
+		
 		var render = function () {
 			requestAnimationFrame(render);
 			
-			camera.position.set(0, 0, trans*3);
-			for(var i=0; i<2; i++){
-				camera.position.applyAxisAngle(axes[i], genecloud.angles[i]);
+			if($('#imu').prop('checked')){
+				camera.position.set(0, 0, trans*3);
+				for(var i=0; i<2; i++){
+					camera.position.applyAxisAngle(axes[i], genecloud.currAngles[i]);
+				}
+			}
+			else {
+				genecloud.animateAngle += genecloud.animateInc;
+				camera.position.set(0, -trans*2, trans*3)
+				camera.position.applyAxisAngle(axes[1], genecloud.animateAngle);
 			}
 			
 			camera.lookAt(origin);
