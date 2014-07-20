@@ -65,7 +65,7 @@
 				<div class="form-group col-lg-3">
 					<div class="input-group">
 						<div class="input-group-addon">dim</div>
-						<select id="dim" class="form-control"><option value="2">2D</option><option value="3">3D</option></select>
+						<select id="dim" class="form-control"><option value="2">2D</option><option value="3" selected="selected">3D</option></select>
 					</div>
 				</div>
 				

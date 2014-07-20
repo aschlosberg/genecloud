@@ -21,6 +21,7 @@ var genecloud = {
 	
 	render : function(){
 		try {
+			genecloud.fetchAccel = false; //restart it when we create a new 3D clouds
 			var seq = $('#seq').val().trim().toUpperCase();
 			if(seq.match(/[^ACGT]/)){
 				throw 'Invalid sequence data; ACGT only.';
@@ -117,7 +118,21 @@ var genecloud = {
 		stage.add(layer);
 	},
 	
+	angles : [0, 0, 0],
+	fetchAccel : false,
+	accel : function(){
+		$.getJSON('http://localhost:8000/gyroAngle', function(data){
+			genecloud.angles = data;
+			if(genecloud.fetchAccel){
+				setTimeout(genecloud.accel, 0);
+			}
+		});
+	},
+	
 	plot3D : function(pts, frame){
+		genecloud.fetchAccel = true;
+		setTimeout(genecloud.accel, 0);
+	
 		var scene = new THREE.Scene();
 		scene.fog = new THREE.FogExp2( 0xefd1b5, 0.25 );
 		var camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 1000 );
@@ -137,13 +152,17 @@ var genecloud = {
 		}));
 		scene.add(cloud);
 
-		camera.position.set(0, -trans*1.5, trans*2.5);
+		var axes = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, 0, 1)];
 		
-		var rotate = new THREE.Vector3(0, 1, 0);
 		var origin = new THREE.Vector3(0, 0, 0);
 		var render = function () {
 			requestAnimationFrame(render);
-			camera.position.applyAxisAngle(rotate, 0.01);
+			
+			camera.position.set(0, 0, trans*3);
+			for(var i=0; i<2; i++){
+				camera.position.applyAxisAngle(axes[i], genecloud.angles[i]);
+			}
+			
 			camera.lookAt(origin);
 			renderer.render(scene, camera);
 		};
