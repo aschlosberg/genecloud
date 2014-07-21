@@ -3,7 +3,11 @@ var genecloud = {
 	init : function(){
 		$('#render').click(genecloud.render);
 		$('#save').click(function(){
-			alert('This function has not been implemented.');
+			genecloud.canvas.toDataURL({
+				callback: function(dataUrl) {
+					window.open(dataUrl);
+				}
+			});
 		});
 		
 		$('button').click(function(){
@@ -76,6 +80,7 @@ var genecloud = {
 	u8 : null, //uint8 view for the buffer
 	seqLen : 0,
 	counts : {},
+	canvas : null,
 	
 	render : function(){
 		try {
@@ -223,9 +228,15 @@ var genecloud = {
 			width: 1 << size,
 			height: 1 << size
 		});
+		
+		genecloud.canvas = stage;
 
 		var scale = 1 << (size - 2*k);
 		var layer = new Kinetic.Layer();
+		
+		layer.add(new Kinetic.Rect({
+			x : 0, y : 0, width : 1 << size, height : 1 << size, fill : '#fff'
+		}));
 
 		for(var x in counts.data){
 			for(var y in counts.data[x]){
@@ -283,7 +294,10 @@ var genecloud = {
 		//scene.fog = new THREE.Fog( 0x000000, 300, 600 );
 		var camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 1000 );
 
-		var renderer = new THREE.WebGLRenderer();
+		var renderer = new THREE.WebGLRenderer({
+			preserveDrawingBuffer : true // required to support .toDataURL() - http://learningthreejs.com/blog/2011/09/03/screenshot-in-javascript/
+		});
+		
 		renderer.setSize( 512, 512 );
 		$('#cloud').append($(renderer.domElement));
 		
@@ -344,6 +358,7 @@ var genecloud = {
 		};
 
 		render();
+		genecloud.canvas = renderer.domElement;
 	},
 	
 	kmer : function(x, k){
