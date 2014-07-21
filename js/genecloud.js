@@ -85,8 +85,6 @@ var genecloud = {
 	render : function(){
 		try {
 			$('#render').html('Rendering...').prop('disabled', true);
-		
-			genecloud.fetchAngles = false; //restart it when we create a new 3D clouds
 			
 			if(genecloud.changed){ //repack the sequence as binary
 				genecloud.changed = false;
@@ -273,21 +271,19 @@ var genecloud = {
 	},
 	
 	currAngles : [0, 0, 0],
-	fetchAngles : false,
 	animateAngle : 0,
 	animateLastFrameTime : (new Date()).getTime(),
 	
 	angles : function(){
-		$.getJSON('http://localhost:8000/gyroAngle', function(data){
-			genecloud.currAngles = data;
-			if(genecloud.fetchAngles){
-				setTimeout(genecloud.angles, 0);
-			}
-		});
+		if(typeof io=='function'){
+			var socket = io('http://localhost:3000');
+			socket.on('angles', function(data){
+				genecloud.currAngles = data;
+			});
+		}
 	},
 	
 	plot3D : function(counts, k){
-		genecloud.fetchAngles = true;
 		setTimeout(genecloud.angles, 0);
 	
 		var scene = new THREE.Scene();

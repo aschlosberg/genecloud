@@ -17,11 +17,15 @@
 
 		<?php
 		//ensure fresh javascript based on time when developing locally or git commit in production
-		if(strpos($_SERVER['HTTP_HOST'], "localhost")===false){
+		define('LOCALHOST', strpos($_SERVER['HTTP_HOST'], "localhost")!==false);
+		if(!LOCALHOST){
 			$fresh = htmlentities(`git log --pretty=format:'%h' -n 1`); //just to be safe
 		}
 		else {
 			$fresh = time();
+		?>
+		<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+		<?php
 		}
 		?>
 		<script src="js/btn-checkbox.js?fresh=<?=$fresh?>"></script>

@@ -1,14 +1,14 @@
 var dgram = require("dgram");
-var sock = dgram.createSocket("udp4");
+var udp = dgram.createSocket("udp4");
 var listen_address = null;
 
-sock.on("error", function(err){
+udp.on("error", function(err){
 	console.log("Socket error:\n" + err.stack);
-	sock.close();
+	udp.close();
 });
 
-sock.on("listening", function(){
-	listen_address = sock.address();
+udp.on("listening", function(){
+	listen_address = udp.address();
 });
 
 function imuZero(){
@@ -47,7 +47,7 @@ for(var i in avg){
 	imu['avg'+n] = imuZero();
 }
 
-sock.on("message", function(buf, from){
+udp.on("message", function(buf, from){
 
 	var raw = buf.toString('ASCII').split(/,\s+/);
 	var data = {a : [], g : [], m : []}; //accelerometer, gyroscope, magnetometer
@@ -134,7 +134,7 @@ sock.on("message", function(buf, from){
 	}
 });
 
-sock.bind(5555); //default for the app
+udp.bind(5555); //default for the app
 
 var http = require('http');
 
@@ -177,4 +177,36 @@ var server = http.createServer(function(req, resp){
 	resp.end(JSON.stringify(data));
 });
 
-server.listen(8000);
+server.listen(8000, function(){
+	console.log('HTTP listening on 8000');
+});
+
+/**
+ * Web socket with socket.io
+ */
+
+var app = require('express')();
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
+var connCount = 0;
+
+io.on('connection', function(socket){
+	connCount++;
+	socket.on('disconnect', function(){
+		connCount--;
+	});
+});
+
+var sendAngles = function(){
+	if(connCount){
+		io.emit('angles', imu.gyro);
+	}
+	setTimeout(sendAngles, 20);
+}
+
+sendAngles();
+
+http.listen(3000, function(){
+	console.log('Socket.io listening on 3000');
+});
