@@ -7,6 +7,8 @@
 		<title>GeneCloud Visualisation</title>
 		
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/themes/smoothness/jquery-ui.css" />
+		<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.0/jquery-ui.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/kineticjs/5.0.6/kinetic.min.js"></script>
 		<script src="//cdnjs.cloudflare.com/ajax/libs/three.js/r68/three.min.js"></script>
 		<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
@@ -69,24 +71,24 @@
 					<div class="form-group col-lg-3">
 						<div class="input-group" data-help="Width of the <a href='http://en.wikipedia.org/wiki/K-mer'>k-mer</a>s used in the calculation of point positions in the visualisation.">
 							<div class="input-group-addon">k</div>
-							<input id="frame" class="form-control" value="3" />
+							<input id="k" class="form-control" value="3" />
 						</div>
 					</div>
 			
 					<div class="col-lg-3">
 						<button class="btn btn-default btn-block btn-checkbox">3D</button>
-						<input id="3d" type="checkbox" checked />
+						<input id="3d" type="checkbox" />
 					</div>
 			
 					<div class="form-group col-lg-3">
 						<div class="input-group" data-help-title="Lexicographical Order" data-help="<a href='http://en.wikipedia.org/wiki/K-mer'>k-mer</a>s are treated as <a href='http://en.wikipedia.org/wiki/Radix'>base</a>-4 numbers by utilising any of the possible <a href='http://en.wikipedia.org/wiki/Lexicographical_order'>lexicographical orderings</a>. The first is assigned the decimal value 0, the second assigned 1, and so on.">
 							<div class="input-group-addon">Order</div>
-							<select id="rank" class="form-control"></select>
+							<select id="order" class="form-control"></select>
 						</div>
 					</div>
 			
 					<div class="col-lg-3">
-						<button id="go" class="btn btn-default btn-block">Render</button>
+						<button id="render" class="btn btn-default btn-block">Render</button>
 					</div>
 					
 					<div class="clearfix visible-lg-block"></div>
@@ -103,7 +105,9 @@
 						<input id="imu" type="checkbox" />
 					</div>
 					
-					<div class="col-lg-3"></div>
+					<div class="col-lg-3" data-help="The number of k-mer pairs (2D) or triplets (3D) represented by each point is displayed as size, colour, or transparency. This is calculated as the ratio of the point-value to the maximum value, to the power of this slider value (0, 1] i.e. 1 is a linear representation and 0.5 is the square root of the ratio.">
+						<div class="col-lg-10" id="range"></div>
+					</div>
 					
 					<div class="col-lg-3">
 						<button id="save" class="btn btn-default btn-block">Save Image</button>
