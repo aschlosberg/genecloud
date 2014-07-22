@@ -11,13 +11,51 @@ udp.on("listening", function(){
 	listen_address = udp.address();
 });
 
-function imuZero(){
-	var imuZero = {
-		a : [0, 0, 0],
-		g : [0, 0, 0],
-		m : [0, 0, 0]
+/**
+ * Extract each sensor's data based on the app's description:
+ *
+ * https://play.google.com/store/apps/details?id=org.zwiener.wimu
+ *
+ * Although more sensors (not documented) are available with:
+ * https://play.google.com/store/apps/details?id=de.lorenz_fenster.sensorstreamgps
+ * 
+ * Timestamp [sec], sensorid, x, y, z, sensorid, x, y, z, sensorid, x, y, z
+ * Sensor id:
+ * 3 - Accelerometer (m/s^2)
+ * 4 - Gyroscope (rad/s)
+ * 5 - Magnetometer (micro-Tesla uT)
+ */
+
+var sensors = { //app uses IDs for each, each key is the app ID and the array is a pretty-name, the vector length, and optional transformation callback
+	3 : ['accel', 3],
+	4 : ['gyro', 3],
+	5 : ['mag', 3],
+	81 : ['orient', 3, function(deg){
+		return deg / 180 * Math.PI;
+	}],
+	84 : ['rot', 3]
+}
+
+var imuObjs = {zero : {}, empty : {}}
+for(var i in sensors){
+	s = sensors[i];
+	imuObjs.zero[s[0]] = [];
+	imuObjs.empty[s[0]] = [];
+	for(var j=0; j<s[1]; j++){
+		imuObjs.zero[s[0]].push(0);
 	}
-	return JSON.parse(JSON.stringify(imuZero)); //quick and dirty cloning, but we're only doing it to initialise the server
+}
+
+function imuObj(obj){
+	return JSON.parse(JSON.stringify(imuObjs[obj])); //quick and dirty cloning, but we're only doing it to initialise the server
+}
+
+function imuZero(){
+	return imuObj('zero');
+}
+
+function imuEmpty(){
+	return imuObj('empty');
 }
 
 /**
@@ -28,7 +66,7 @@ var imu = {
 		timestamp : 0,
 		data : imuZero()
 	},
-	gyro : [0, 0, 0]
+	gyro : [0, 0, 0] //summed value over time
 }
 
 /**
@@ -50,41 +88,36 @@ for(var i in avg){
 udp.on("message", function(buf, from){
 
 	var raw = buf.toString('ASCII').split(/,\s+/);
-	var data = {a : [], g : [], m : []}; //accelerometer, gyroscope, magnetometer
-	
-	/**
-	 * Extract each sensor's data based on the app's description:
-	 *
-	 * https://play.google.com/store/apps/details?id=org.zwiener.wimu
-	 * 
-	 * Timestamp [sec], sensorid, x, y, z, sensorid, x, y, z, sensorid, x, y, z
-	 * Sensor id:
-	 * 3 - Accelerometer (m/s^2)
-	 * 4 - Gyroscope (rad/s)
-	 * 5 - Magnetometer (micro-Tesla uT)
-	 */
-	
-	//invalid packet 
-	if((raw.length-1)%4){
-		return;
-	}
+	var data = imuEmpty();
 	
 	var timestamp = parseFloat(raw[0]);
-	for(var i=1; i<raw.length; i+=4){
-		var sID;
-		switch(raw[i]){
-			case '3':
-				sID = 'a';
-				break;
-			case '4':
-				sID = 'g';
-				break;
-			case '5':
-				sID = 'm';
-				break;
+	var sID = 0, transform = null, doTransform = false;
+	
+	for(var i=1, j=0; i<raw.length; i++, j++){
+		if(raw[i].match(/^\d+$/)){
+			if(raw[i] in sensors){
+				sID = sensors[raw[i]][0];
+				j = -1;
+				if(typeof sensors[raw[i]][2]=='function'){
+					doTransform = true;
+					transform = sensors[raw[i]][2];
+				}
+				else {
+					doTransform = false;
+					transform = null;
+				}
+			}
+			else {
+				sID = false;
+				console.log('Unknown sensor ID: '+raw[i]);
+			}
 		}
-		for(var j=0; j<3; j++){
-			data[sID][j] = parseFloat(raw[i+j+1]);
+		else {
+			if(sID===false){
+				continue;
+			}
+			var fl = parseFloat(raw[i]);
+			data[sID][j] = doTransform ? transform(fl) : fl;
 		}
 	}
 
@@ -95,15 +128,15 @@ udp.on("message", function(buf, from){
 		 * - HTTP request for the URL /zero
 		 * - shake the device
 		 */
-		var accel = (Math.pow(data.a[0],2) + Math.pow(data.a[1],2) + Math.pow(data.a[2],2));
+		var accel = (Math.pow(data.accel[0],2) + Math.pow(data.accel[1],2) + Math.pow(data.accel[2],2));
 		if(shakeLimit < accel){
 			imu.gyro = [0, 0, 0];
 		}
 		else {
 			var delta = timestamp - imu.latest.timestamp;
-			if(data.g.length==3){
+			if(data.gyro.length==3){
 				for(var dim=0; dim<3; dim++){
-					imu.gyro[dim] += data.g[dim]*delta;
+					imu.gyro[dim] += data.gyro[dim]*delta;
 				}
 			}
 		}
@@ -146,7 +179,7 @@ var server = http.createServer(function(req, resp){
 	else {
 		switch(req.url){
 			case '/accelAngle':
-				var a = imu.latest.data.a;
+				var a = imu.latest.data.accel;
 				var x2 = Math.pow(a[0],2);
 				var y2 = Math.pow(a[1],2);
 				var z2 = Math.pow(a[2],2);
@@ -200,7 +233,7 @@ io.on('connection', function(socket){
 
 var sendAngles = function(){
 	if(connCount){
-		io.emit('angles', imu.gyro);
+		io.emit('angles', imu.latest.data.rot);
 	}
 	setTimeout(sendAngles, 20);
 }

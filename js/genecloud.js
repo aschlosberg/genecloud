@@ -338,7 +338,7 @@ var genecloud = {
 			if($('#imu').prop('checked')){
 				camera.position.set(0, 0, trans*3);
 				for(var i=0; i<2; i++){
-					camera.position.applyAxisAngle(axes[i], genecloud.currAngles[i]);
+					camera.position.applyAxisAngle(axes[i], genecloud.currAngles[i]*2);
 				}
 			}
 			else {
