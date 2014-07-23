@@ -133,7 +133,12 @@ var genecloud = {
 			var dim = $('#3d').prop('checked') ? 3 : 2;
 			$('#cloud').empty();
 			
-			genecloud['plot'+dim+'D'](genecloud.getCounts(k, dim), k);
+			if(false){
+				genecloud.plotEntropy();
+			}
+			else {
+				genecloud['plot'+dim+'D'](genecloud.getCounts(k, dim), k);
+			}
 		}
 		catch(e){
 			console.log(e);
@@ -217,6 +222,94 @@ var genecloud = {
 			dec = dec >>> 2;
 		}
 		return kmer;
+	},
+	
+	plotEntropy : function(){
+		var k = 6; //produce a 2^k by 2^k plot
+		var binSize = genecloud.seqLen / (1 << (k << 1));
+		var entropy = [];
+		var logBase = Math.log(2);
+		var maxEnt = 0;
+		for(var i=0; i<genecloud.seqLen; i+=binSize){
+			var counts = [0, 0, 0, 0];
+			for(var j=0; j<binSize; j++){
+				counts[genecloud.getNucleotide(i+j)]++;
+			}
+			
+			var ent = 0;
+			for(n=0; n<4; n++){
+				if(!counts[n]){
+					continue;
+				}
+				var p = counts[n]/binSize;
+				ent -= p * Math.log(p)/logBase;
+			}
+			entropy.push(ent);
+			maxEnt = Math.max(maxEnt, ent);
+		}
+		
+		//http://en.wikipedia.org/wiki/Hilbert_curve#Applications_and_mapping_algorithms
+		var rot = function(n, xy, rx, ry){
+			var x = xy[0];
+			var y = xy[1];
+			if(ry==0){
+				if(rx==1){
+					x = n-1 - x;
+					y = n-1 - y;
+				}
+				var t  = x;
+				x = y;
+				y = t;
+			}
+			return [x, y];
+		}
+ 
+		var hilbert = function(n, d){ //n = 2^(2k); d = 0...n-1
+			var rx, ry, s, t = d;
+			var x = 0, y = 0, xy;
+			for(var s=1; s<n; s*=2){
+				rx = 1 & (t/2);
+				ry = 1 & (t ^ rx);
+				xy = rot(s, [x, y], rx, ry);
+				x = xy[0];
+				y = xy[1];
+				x += s * rx;
+				y += s * ry;
+				t /= 4;
+			}
+			return [x, y];
+		}
+		
+		var size = 9;
+		var stage = new Kinetic.Stage({
+			container: 'cloud',
+			width: 1 << size,
+			height: 1 << size
+		});
+		
+		genecloud.canvas = stage;
+
+		var scale = 1 << (size - k);
+		var layer = new Kinetic.Layer();
+		
+		layer.add(new Kinetic.Rect({
+			x : 0, y : 0, width : 1 << size, height : 1 << size, fill : '#fff'
+		}));
+
+		for(var e in entropy){
+			var xy = hilbert(4096, e);
+			var node = new Kinetic.Rect({
+				x: xy[0]*scale,
+				y: xy[1]*scale,
+				width: scale,
+				height: scale,
+				fill: 'rgba(0,0,0,'+(entropy[e]/maxEnt)+')',
+				transformsEnabled: 'position'
+			});
+			layer.add(node);
+		}
+		
+		stage.add(layer);
 	},
 	
 	plot2D : function(counts, k){
