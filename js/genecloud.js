@@ -129,15 +129,18 @@ var genecloud = {
 			/**
 			 * NB establish an upper bound for k!
 			 */
-			
-			var dim = $('#3d').prop('checked') ? 3 : 2;
+
 			$('#cloud').empty();
 			
-			if(false){
-				genecloud.plotEntropy();
-			}
-			else {
-				genecloud['plot'+dim+'D'](genecloud.getCounts(k, dim), k);
+			var format = $('#format').val();
+			switch(format){
+				case 'ent':
+					genecloud.plotEntropy();
+					break;
+				case '2': case '3':
+					var dim = parseInt(format);
+					genecloud['plot'+dim+'D'](genecloud.getCounts(k, dim), k);
+					break;
 			}
 		}
 		catch(e){
@@ -225,25 +228,40 @@ var genecloud = {
 	},
 	
 	plotEntropy : function(){
-		var k = 6; //produce a 2^k by 2^k plot
-		var binSize = genecloud.seqLen / (1 << (k << 1));
+		var n = 6; //produce a 2^n by 2^n plot
+		var binSize = genecloud.seqLen / (1 << (n << 1));
 		var entropy = [];
-		var logBase = Math.log(2);
+		var base = 2;
+		var logBase = Math.log(base);
 		var maxEnt = 0;
+
+		var k = parseInt($('#k').val());
+		var numKmers = 1 << (k << 1);
+		var zero = []
+		for(var i=0; i<numKmers; i++){
+			zero.push(0);
+		}
+		
+		var sh = $('#shift').prop('checked') ? k : 1;
 		for(var i=0; i<genecloud.seqLen; i+=binSize){
-			var counts = [0, 0, 0, 0];
-			for(var j=0; j<binSize; j++){
-				counts[genecloud.getNucleotide(i+j)]++;
+			var counts = zero.slice(); //clone
+			for(var j=0; j<binSize; j+=sh){
+				var count = 0;
+				for(var x=0; x<k; x++){
+					count = (count << 2) + genecloud.getNucleotide(i+j+x);
+				}
+				counts[count]++;
 			}
 			
 			var ent = 0;
-			for(n=0; n<4; n++){
-				if(!counts[n]){
+			for(kmer=0; kmer<numKmers; kmer++){
+				if(!counts[kmer]){
 					continue;
 				}
-				var p = counts[n]/binSize;
+				var p = counts[kmer]/binSize;
 				ent -= p * Math.log(p)/logBase;
 			}
+			ent = Math.pow(ent, 1/3);
 			entropy.push(ent);
 			maxEnt = Math.max(maxEnt, ent);
 		}
@@ -289,7 +307,7 @@ var genecloud = {
 		
 		genecloud.canvas = stage;
 
-		var scale = 1 << (size - k);
+		var scale = 1 << (size - n);
 		var layer = new Kinetic.Layer();
 		
 		layer.add(new Kinetic.Rect({

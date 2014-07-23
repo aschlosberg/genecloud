@@ -73,19 +73,23 @@
 			<div class="row panel panel-default">
 				<div class="panel-body">
 					<div class="form-group col-lg-3">
-						<div class="input-group" data-help="Width of the <a href='http://en.wikipedia.org/wiki/K-mer'>k-mer</a>s used in the calculation of point positions in the visualisation.">
+						<div class="input-group" data-help="Width of the <a href='http://en.wikipedia.org/wiki/K-mer'>k-mer</a>s used in the calculation of entropy values or of point positions in the 2D / 3D visualisation.">
 							<div class="input-group-addon">k</div>
 							<input id="k" class="form-control" value="3" />
 						</div>
 					</div>
 			
-					<div class="col-lg-3">
-						<button class="btn btn-default btn-block btn-checkbox">3D</button>
-						<input id="3d" type="checkbox" />
+					<div class="form-group col-lg-3">
+						<div class="input-group" data-help="2D and 3D formats represent adjacent pairs / triplets (respectively) of kmers. Entropy format displays the <a href='http://en.wikipedia.org/wiki/Entropy_(information_theory)'>Shannon entropy</a> of a shifting window, mapped to a <a href='http://en.wikipedia.org/wiki/Hilbert_curve'>Hilbert curve</a>.">
+							<div class="input-group-addon">Format</div>
+							<select id="format" class="form-control">
+								<?php foreach(array("2" => "2D", "3" => "3D", "ent" => "Entropy") as $val => $lbl) { echo "<option value='{$val}'>{$lbl}</option>"; } ?>
+							</select>
+						</div>
 					</div>
 			
 					<div class="form-group col-lg-3">
-						<div class="input-group" data-help-title="Lexicographical Order" data-help="<a href='http://en.wikipedia.org/wiki/K-mer'>k-mer</a>s are treated as <a href='http://en.wikipedia.org/wiki/Radix'>base</a>-4 numbers by utilising any of the possible <a href='http://en.wikipedia.org/wiki/Lexicographical_order'>lexicographical orderings</a>. The first is assigned the decimal value 0, the second assigned 1, and so on.">
+						<div class="input-group" data-help-title="Lexicographical Order" data-help="<em>Only applies to 2D and 3D formats.</em><br /><br /><a href='http://en.wikipedia.org/wiki/K-mer'>k-mer</a>s are treated as <a href='http://en.wikipedia.org/wiki/Radix'>base</a>-4 numbers by utilising any of the possible <a href='http://en.wikipedia.org/wiki/Lexicographical_order'>lexicographical orderings</a>. The first is assigned the decimal value 0, the second assigned 1, and so on.">
 							<div class="input-group-addon">Order</div>
 							<select id="order" class="form-control"></select>
 						</div>
@@ -98,7 +102,7 @@
 					<div class="clearfix visible-lg-block"></div>
 					
 					<div class="btn-group col-lg-3">
-						<button class="btn btn-default btn-checkbox btn-block" data-help="Shifting by k treats the nucleotides in much the same way as translation, whereby there are no shared nucleotides between visualisation points. Alternatively the reading frame is shifted by 1, and points share up to k-1 nucleotides depending on their proximity in the sequence.">
+						<button class="btn btn-default btn-checkbox btn-block" data-help="Shifting by k treats the nucleotides in much the same way as translation, whereby there are no shared nucleotides between visualisation points or entropy 'bins'. Alternatively the reading frame is shifted by 1, and points share up to k-1 nucleotides depending on their proximity in the sequence.">
 							Shift reading-frame by k
 						</button>
 						<input id="shift" type="checkbox" checked />
